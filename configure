@@ -27,12 +27,6 @@ fi
 # destination name for static library
 STATICLIB=libz.a
 
-# extract zlib version numbers from zlib.h
-VER=`sed -n -e '/VERSION "/s/.*"\(.*\)".*/\1/p' < zlib.h`
-VER3=`sed -n -e '/VERSION "/s/.*"\([0-9]*\\.[0-9]*\\.[0-9]*\).*/\1/p' < zlib.h`
-VER2=`sed -n -e '/VERSION "/s/.*"\([0-9]*\\.[0-9]*\)\\..*/\1/p' < zlib.h`
-VER1=`sed -n -e '/VERSION "/s/.*"\([0-9]*\)\\..*/\1/p' < zlib.h`
-
 # establish commands for library building
 if "${CROSS_PREFIX}ar" --version >/dev/null 2>/dev/null || test $? -lt 126; then
     AR=${AR-"${CROSS_PREFIX}ar"}
@@ -78,6 +72,10 @@ old_cflags="$CFLAGS"
 OBJC='$(OBJZ) $(OBJG)'
 PIC_OBJC='$(PIC_OBJZ) $(PIC_OBJG)'
 
+# infer default srcdir from path of $0/configure
+srcdir=`echo $0 | sed 's/[^\/]*$//'`
+if test -z "$srcdir"; then srcdir='./'; fi
+
 # leave this script, optionally in a bad way
 leave()
 {
@@ -101,6 +99,7 @@ case "$1" in
       echo '    [--static] [--64] [--libdir=LIBDIR] [--sharedlibdir=LIBDIR]' | tee -a configure.log
       echo '    [--includedir=INCLUDEDIR] [--archs="-arch i386 -arch x86_64"]' | tee -a configure.log
         exit 0 ;;
+    -v*=* | --srcdir=*) srcdir=`echo $1 | sed 's/.*=//;s/\/*$/\//'`; shift ;;
     -p*=* | --prefix=*) prefix=`echo $1 | sed 's/.*=//'`; shift ;;
     -e*=* | --eprefix=*) exec_prefix=`echo $1 | sed 's/.*=//'`; shift ;;
     -l*=* | --libdir=*) libdir=`echo $1 | sed 's/.*=//'`; shift ;;
@@ -127,6 +126,12 @@ case "$1" in
       leave 1;;
     esac
 done
+
+# extract zlib version numbers from zlib.h
+VER=`sed -n -e '/VERSION "/s/.*"\(.*\)".*/\1/p' < ${srcdir}zlib.h`
+VER3=`sed -n -e '/VERSION "/s/.*"\([0-9]*\\.[0-9]*\\.[0-9]*\).*/\1/p' < ${srcdir}zlib.h`
+VER2=`sed -n -e '/VERSION "/s/.*"\([0-9]*\\.[0-9]*\)\\..*/\1/p' < ${srcdir}zlib.h`
+VER1=`sed -n -e '/VERSION "/s/.*"\([0-9]*\)\\..*/\1/p' < ${srcdir}zlib.h`
 
 # temporary file name
 test=ztest$$
@@ -184,9 +189,9 @@ if test "$gcc" -eq 1 && ($cc -c $test.c) >> configure.log 2>&1; then
   fi
   case "$uname" in
   Linux* | linux* | GNU | GNU/* | solaris*)
-        LDSHARED=${LDSHARED-"$cc -shared -Wl,-soname,libz.so.1,--version-script,zlib.map"} ;;
+        LDSHARED=${LDSHARED-"$cc -shared -Wl,-soname,libz.so.1,--version-script,${srcdir}zlib.map"} ;;
   *BSD | *bsd* | DragonFly)
-        LDSHARED=${LDSHARED-"$cc -shared -Wl,-soname,libz.so.1,--version-script,zlib.map"}
+        LDSHARED=${LDSHARED-"$cc -shared -Wl,-soname,libz.so.1,--version-script,${srcdir}zlib.map"}
         LDCONFIG="ldconfig -m" ;;
   CYGWIN* | Cygwin* | cygwin* | OS/2*)
         EXE='.exe' ;;
@@ -470,7 +475,7 @@ else
 fi
 
 # copy clean zconf.h for subsequent edits
-cp -p zconf.h.in zconf.h
+cp -p ${srcdir}zconf.h.in zconf.h
 
 echo >> configure.log
 
@@ -763,6 +768,7 @@ echo SHAREDLIBV = $SHAREDLIBV >> configure.log
 echo STATICLIB = $STATICLIB >> configure.log
 echo TEST = $TEST >> configure.log
 echo VER = $VER >> configure.log
+echo srcdir = $srcdir >> configure.log
 echo Z_U4 = $Z_U4 >> configure.log
 echo exec_prefix = $exec_prefix >> configure.log
 echo includedir = $includedir >> configure.log
@@ -773,7 +779,8 @@ echo sharedlibdir = $sharedlibdir >> configure.log
 echo uname = $uname >> configure.log
 
 # udpate Makefile with the configure results
-sed < Makefile.in "
+sed < ${srcdir}Makefile.in "
+/^srcdir *=/s#=.*#=$srcdir#
 /^CC *=/s#=.*#=$CC#
 /^CFLAGS *=/s#=.*#=$CFLAGS#
 /^SFLAGS *=/s#=.*#=$SFLAGS#
@@ -803,7 +810,7 @@ sed < Makefile.in "
 " > Makefile
 
 # create zlib.pc with the configure results
-sed < zlib.pc.in "
+sed < ${srcdir}zlib.pc.in "
 /^CC *=/s#=.*#=$CC#
 /^CFLAGS *=/s#=.*#=$CFLAGS#
 /^CPP *=/s#=.*#=$CPP#

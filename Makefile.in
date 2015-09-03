@@ -16,6 +16,9 @@
 # To install in $HOME instead of /usr/local, use:
 #    make install prefix=$HOME
 
+srcdir=./
+VPATH=$(srcdir)
+
 CC=cc
 
 CFLAGS=-O
@@ -114,7 +117,7 @@ test64: all64
 	rm -f $$TMP64
 
 infcover.o: test/infcover.c zlib.h zconf.h
-	$(CC) $(CFLAGS) -I. -c -o $@ test/infcover.c
+	$(CC) $(CFLAGS) -I. -c -o $@ $<
 
 infcover: infcover.o libz.a
 	$(CC) $(CFLAGS) -o $@ infcover.o libz.a
@@ -129,28 +132,28 @@ libz.a: $(OBJS)
 	-@ ($(RANLIB) $@ || true) >/dev/null 2>&1
 
 match.o: match.S
-	$(CPP) match.S > _match.s
+	$(CPP) $< > _match.s
 	$(CC) -c _match.s
 	mv _match.o match.o
 	rm -f _match.s
 
 match.lo: match.S
-	$(CPP) match.S > _match.s
+	$(CPP) $< > _match.s
 	$(CC) -c -fPIC _match.s
 	mv _match.o match.lo
 	rm -f _match.s
 
 example.o: test/example.c zlib.h zconf.h
-	$(CC) $(CFLAGS) -I. -c -o $@ test/example.c
+	$(CC) $(CFLAGS) -I. -c -o $@ $<
 
 minigzip.o: test/minigzip.c zlib.h zconf.h
-	$(CC) $(CFLAGS) -I. -c -o $@ test/minigzip.c
+	$(CC) $(CFLAGS) -I. -c -o $@ $<
 
 example64.o: test/example.c zlib.h zconf.h
-	$(CC) $(CFLAGS) -I. -D_FILE_OFFSET_BITS=64 -c -o $@ test/example.c
+	$(CC) $(CFLAGS) -I. -D_FILE_OFFSET_BITS=64 -c -o $@ $<
 
 minigzip64.o: test/minigzip.c zlib.h zconf.h
-	$(CC) $(CFLAGS) -I. -D_FILE_OFFSET_BITS=64 -c -o $@ test/minigzip.c
+	$(CC) $(CFLAGS) -I. -D_FILE_OFFSET_BITS=64 -c -o $@ $<
 
 .SUFFIXES: .lo
 
@@ -203,7 +206,7 @@ install-libs: $(LIBS)
 	  ln -s $(SHAREDLIBV) $(DESTDIR)$(sharedlibdir)/$(SHAREDLIBM); \
 	  ($(LDCONFIG) || true)  >/dev/null 2>&1; \
 	fi
-	cp zlib.3 $(DESTDIR)$(man3dir)
+	cp $(srcdir)zlib.3 $(DESTDIR)$(man3dir)
 	chmod 644 $(DESTDIR)$(man3dir)/zlib.3
 	cp zlib.pc $(DESTDIR)$(pkgconfigdir)
 	chmod 644 $(DESTDIR)$(pkgconfigdir)/zlib.pc
@@ -212,7 +215,7 @@ install-libs: $(LIBS)
 
 install: install-libs
 	-@if [ ! -d $(DESTDIR)$(includedir)   ]; then mkdir -p $(DESTDIR)$(includedir); fi
-	cp zlib.h zconf.h $(DESTDIR)$(includedir)
+	cp $(srcdir)zlib.h zconf.h $(DESTDIR)$(includedir)
 	chmod 644 $(DESTDIR)$(includedir)/zlib.h $(DESTDIR)$(includedir)/zconf.h
 
 uninstall:
@@ -227,17 +230,17 @@ uninstall:
 docs: zlib.3.pdf
 
 zlib.3.pdf: zlib.3
-	groff -mandoc -f H -T ps zlib.3 | ps2pdf - zlib.3.pdf
+	groff -mandoc -f H -T ps $< | ps2pdf - $(srcdir)zlib3.pdf
 
 zconf.h.cmakein: zconf.h.in
 	-@ TEMPFILE=zconfh_$$; \
 	echo "/#define ZCONF_H/ a\\\\\n#cmakedefine Z_PREFIX\\\\\n#cmakedefine Z_HAVE_UNISTD_H\n" >> $$TEMPFILE &&\
-	sed -f $$TEMPFILE zconf.h.in > zconf.h.cmakein &&\
-	touch -r zconf.h.in zconf.h.cmakein &&\
+	sed -f $$TEMPFILE $< > $(srcdir)zconf.h.cmakein &&\
+	touch -r $< $(srcdir)zconf.h.cmakein &&\
 	rm $$TEMPFILE
 
 zconf: zconf.h.in
-	cp -p zconf.h.in zconf.h
+	cp -p $< $(srcdir)zconf.h
 
 mostlyclean: clean
 clean:
@@ -255,9 +258,9 @@ maintainer-clean: distclean
 distclean: clean zconf zconf.h.cmakein docs
 	rm -f Makefile zlib.pc configure.log
 	-@rm -f .DS_Store
-	-@printf 'all:\n\t-@echo "Please use ./configure first.  Thank you."\n' > Makefile
-	-@printf '\ndistclean:\n\tmake -f Makefile.in distclean\n' >> Makefile
-	-@touch -r Makefile.in Makefile
+	-@printf 'all:\n\t-@echo "Please use ./configure first.  Thank you."\n' > $(srcdir)Makefile
+	-@printf '\ndistclean:\n\tmake -f Makefile.in distclean\n' >> $(srcdir)Makefile
+	-@touch -r $(srcdir)Makefile.in $(srcdir)Makefile
 
 tags:
 	etags *.[ch]
