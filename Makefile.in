@@ -117,7 +117,7 @@ test64: all64
 	rm -f $$TMP64
 
 infcover.o: test/infcover.c zlib.h zconf.h
-	$(CC) $(CFLAGS) -I. -c -o $@ $<
+	$(CC) $(CFLAGS) -I. -c -o $@ $(srclib)infcover.c
 
 infcover: infcover.o libz.a
 	$(CC) $(CFLAGS) -o $@ infcover.o libz.a
@@ -132,28 +132,28 @@ libz.a: $(OBJS)
 	-@ ($(RANLIB) $@ || true) >/dev/null 2>&1
 
 match.o: match.S
-	$(CPP) $< > _match.s
+	$(CPP) $(srclib)match.S > _match.s
 	$(CC) -c _match.s
 	mv _match.o match.o
 	rm -f _match.s
 
 match.lo: match.S
-	$(CPP) $< > _match.s
+	$(CPP) $(srclib)match.S > _match.s
 	$(CC) -c -fPIC _match.s
 	mv _match.o match.lo
 	rm -f _match.s
 
 example.o: test/example.c zlib.h zconf.h
-	$(CC) $(CFLAGS) -I. -c -o $@ $<
+	$(CC) $(CFLAGS) -I. -c -o $@ $(srclib)test/example.c
 
 minigzip.o: test/minigzip.c zlib.h zconf.h
-	$(CC) $(CFLAGS) -I. -c -o $@ $<
+	$(CC) $(CFLAGS) -I. -c -o $@ $(srclib)test/minigzip.c
 
 example64.o: test/example.c zlib.h zconf.h
-	$(CC) $(CFLAGS) -I. -D_FILE_OFFSET_BITS=64 -c -o $@ $<
+	$(CC) $(CFLAGS) -I. -D_FILE_OFFSET_BITS=64 -c -o $@ $(srclib)test/example.c
 
 minigzip64.o: test/minigzip.c zlib.h zconf.h
-	$(CC) $(CFLAGS) -I. -D_FILE_OFFSET_BITS=64 -c -o $@ $<
+	$(CC) $(CFLAGS) -I. -D_FILE_OFFSET_BITS=64 -c -o $@ $(srclib)test/minigzip.c
 
 .SUFFIXES: .lo
 
@@ -230,17 +230,17 @@ uninstall:
 docs: zlib.3.pdf
 
 zlib.3.pdf: zlib.3
-	groff -mandoc -f H -T ps $< | ps2pdf - $(srcdir)zlib3.pdf
+	groff -mandoc -f H -T ps $(srcdir)zlib.3 | ps2pdf - $(srcdir)zlib.3.pdf
 
 zconf.h.cmakein: zconf.h.in
 	-@ TEMPFILE=zconfh_$$; \
 	echo "/#define ZCONF_H/ a\\\\\n#cmakedefine Z_PREFIX\\\\\n#cmakedefine Z_HAVE_UNISTD_H\n" >> $$TEMPFILE &&\
-	sed -f $$TEMPFILE $< > $(srcdir)zconf.h.cmakein &&\
-	touch -r $< $(srcdir)zconf.h.cmakein &&\
+	sed -f $$TEMPFILE $(srcdir)zconf.h.in > $(srcdir)zconf.h.cmakein &&\
+	touch -r $(srcdir)zconf.h.in $(srcdir)zconf.h.cmakein &&\
 	rm $$TEMPFILE
 
 zconf: zconf.h.in
-	cp -p $< $(srcdir)zconf.h
+	cp -p $(srcdir)zconf.h.in $(srcdir)zconf.h
 
 mostlyclean: clean
 clean:
